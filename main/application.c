@@ -1,12 +1,17 @@
-#include "aplication.h"
+#include "application.h"
 #include "BSP.h"
 #include "HAL.h"
+#include <math.h>
 
 Sensors sensor[3] = {
     {NULL, false, ADC_CHANNEL_6, 0, 1},
     {NULL, false, ADC_CHANNEL_5, 0, 2},
     {NULL, false, ADC_CHANNEL_4, 0, 3}
 };
+
+double euclidean_distance(Point a, float b[3]) {
+    return sqrt(pow(a.x - b[0], 2) + pow(a.y - b[1], 2) + pow(a.z - b[2], 2));
+}
 
 #if RTOS
     //TaskHandle_t adcHandle = NULL;
@@ -18,6 +23,7 @@ Sensors sensor[3] = {
 
 static char message[50];
 static float adcRead;
+static float current_point[3] = {0.0, 0.0, 0.0};
 static int adcStatusAll = 0;
 
 bool systemState = true;
@@ -78,7 +84,8 @@ void systemInit(void){
         while(1){
             ADC_Read(sensor->channel, &sensor->adcRawRead);
 
-            adcRead = (((float)sensor->adcRawRead) / 1000)*(50/3.3);
+            adcRead = ((((float)sensor->adcRawRead) / 1000)*(20.96/3.3))+16.94;
+            current_point[sensor->sensorNum-1] = adcRead;
             sprintf(message,"Sensor%d: %.1f C\n", sensor->sensorNum, adcRead);
             UART_Write(message);
             //sprintf(message,"%s \n", sensor->adcStatus ? "ENCENDIDO" : "APAGADO");
@@ -93,6 +100,12 @@ void systemInit(void){
             GPIO_Write(LED_PIN, systemState);
             //sprintf(message, "ESTADO DEL SISTEMA: %s\n", systemState ? "ENCENDIDO" : "APAGADO");
             //UART_Write(message);
+
+            // Verifica si no hay sensores conectados
+            if (adcStatusAll == 0) {
+                UART_Write("No hay dispositivos conectados.\n");
+            }
+            
             vTaskDelay(750 / portTICK_PERIOD_MS);
         }
     }
@@ -166,6 +179,35 @@ void systemInit(void){
             }
 
             vTaskDelay(10 / portTICK_PERIOD_MS);
+        }
+    }
+
+    void vKMeans(void *arg){
+        Point centroids[NUM_POINTS] = {
+            {21.96439839, 22.7299336, 21.92407344},
+            {28.06629513, 27.48887424, 27.42608114},
+            {30.99391202, 32.35545161, 32.95280938}
+        };
+        double distances[NUM_POINTS];
+        int i;
+
+        while(1){
+            int label = 0;
+            double min_distance = -1;
+            for (i = 0; i < NUM_POINTS; i++) {
+                distances[i] = euclidean_distance(centroids[i], current_point);
+
+                if (min_distance == -1 || distances[i] < min_distance) {
+                    min_distance = distances[i];
+                    label = i + 1;
+                }
+            }
+
+            sprintf(message, "El punto (%.1f, %.1f, %.1f) pertenece a la clase: %d\n",
+                current_point[0], current_point[1], current_point[2], label);
+            UART_Write(message);
+
+            vTaskDelay(750 / portTICK_PERIOD_MS);
         }
     }
 #endif

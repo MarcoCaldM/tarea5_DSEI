@@ -1,5 +1,5 @@
-#ifndef APLICATION_H
-#define APLICATION_H
+#ifndef APPLICATION_H
+#define APPLICATION_H
 
 #include "HAL.h"
 
@@ -17,6 +17,16 @@ typedef struct {
     int sensorNum;
 } Sensors;
 
+//----------------------------
+#define NUM_POINTS 3
+
+typedef struct {
+    double x;
+    double y;
+    double z;
+} Point;
+//----------------------------
+
 void systemInit();
 void periphInit(void);
 
@@ -27,6 +37,7 @@ void periphInit(void);
     void vSystem(void *arg);
     void vSensorMonitor(void *arg);
     void vButton(void *arg);
+    void vKMeans(void *arg);
 #endif
 
 #endif

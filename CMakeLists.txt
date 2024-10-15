@@ -17,4 +17,4 @@ endif()
 
 add_compile_definitions(RTOS=1)
 
-project(DSE_Tarea2_Equipo1)
+project(DSE_Tarea5_Equipo1)
