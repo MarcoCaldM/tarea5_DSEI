@@ -1,0 +1,6 @@
+.devcontainer/
+build/
+*.old
+.cache/
+sdkconfig
+settings.json
