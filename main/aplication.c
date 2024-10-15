@@ -45,16 +45,10 @@ void systemInit(void){
     systemState = true;
     GPIO_Write(LED_PIN, systemState);
 
-    #if RTOS
-        for(int i = 0; i < 3; i++) {
-            xTaskCreate(vSensorMonitor, "vSensorMonitor", 2048, (void *)&sensor[i], 5, NULL);
-        }
-        /*if(adcHandle != NULL)
-            vTaskResume(adcHandle);*/
-    #elif !RTOS
-    #endif
-    //ESP_LOGI(TAG, "INICIA SISTEMA");
-    //UART_Write("INICIA SISTEMA\n");
+    for(int i = 0; i < 3; i++) {
+        xTaskCreate(vSensorMonitor, "vSensorMonitor", 2048, (void *)&sensor[i], 5, NULL);
+    }
+    
 }
 
 #if !RTOS
@@ -84,11 +78,11 @@ void systemInit(void){
         while(1){
             ADC_Read(sensor->channel, &sensor->adcRawRead);
 
-            adcRead = ((float)sensor->adcRawRead) / 1000;
-            sprintf(message,"ADC %d: %.1f V\t", sensor->sensorNum, adcRead);
+            adcRead = (((float)sensor->adcRawRead) / 1000)*(50/3.3);
+            sprintf(message,"Sensor%d: %.1f C\n", sensor->sensorNum, adcRead);
             UART_Write(message);
-            sprintf(message,"%s \n", sensor->adcStatus ? "ENCENDIDO" : "APAGADO");
-            UART_Write(message);
+            //sprintf(message,"%s \n", sensor->adcStatus ? "ENCENDIDO" : "APAGADO");
+            //UART_Write(message);
 
             vTaskDelay(750 / portTICK_PERIOD_MS);
         }
@@ -97,14 +91,8 @@ void systemInit(void){
     void vSystem(void *arg){
         while (1){
             GPIO_Write(LED_PIN, systemState);
-            sprintf(message, "ESTADO DEL SISTEMA: %s\n", systemState ? "ENCENDIDO" : "APAGADO");
-            UART_Write(message);
-
-            // Verifica si no hay sensores conectados
-            if (adcStatusAll == 0) {
-                UART_Write("No hay dispositivos conectados.\n");
-            }
-            
+            //sprintf(message, "ESTADO DEL SISTEMA: %s\n", systemState ? "ENCENDIDO" : "APAGADO");
+            //UART_Write(message);
             vTaskDelay(750 / portTICK_PERIOD_MS);
         }
     }
