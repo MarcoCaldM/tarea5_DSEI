@@ -1,2 +1,2 @@
-idf_component_register(SRCS "application.c" "main.c" 
+idf_component_register(SRCS "dataset.c" "application.c" "main.c" 
                     INCLUDE_DIRS ".")
