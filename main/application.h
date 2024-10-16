@@ -7,6 +7,7 @@
     extern TaskHandle_t adcHandle;
     extern TaskHandle_t systemHandle;
     extern TaskHandle_t buttonHandle;
+    extern TaskHandle_t kMeansHandle;
 #endif
 
 typedef struct {

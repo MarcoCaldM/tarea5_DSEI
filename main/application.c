@@ -9,8 +9,17 @@ Sensors sensor[3] = {
     {NULL, false, ADC_CHANNEL_4, 0, 3}
 };
 
+// Funcion para calcular la distancia euclidiana entre dos puntos
 double euclidean_distance(Point a, float b[3]) {
-    return sqrt(pow(a.x - b[0], 2) + pow(a.y - b[1], 2) + pow(a.z - b[2], 2));
+    Sensors *sensors[3];
+
+    for (int i = 0; i < 3; i++) {
+        sensors[i] = &sensor[i]; // Apuntando a las estructuras existentes
+    }
+
+    return sqrt(pow(a.x - b[0], 2)*sensors[0]->adcStatus +
+                pow(a.y - b[1], 2)*sensors[1]->adcStatus +
+                pow(a.z - b[2], 2)*sensors[2]->adcStatus);
 }
 
 #if RTOS
@@ -98,8 +107,13 @@ void systemInit(void){
     void vSystem(void *arg){
         while (1){
             GPIO_Write(LED_PIN, systemState);
-            //sprintf(message, "ESTADO DEL SISTEMA: %s\n", systemState ? "ENCENDIDO" : "APAGADO");
-            //UART_Write(message);
+            
+            if(kMeansHandle !=NULL){
+                if(!systemState)
+                    vTaskSuspend(kMeansHandle);
+                else
+                    vTaskResume(kMeansHandle);
+            }
 
             // Verifica si no hay sensores conectados
             if (adcStatusAll == 0) {
@@ -133,6 +147,7 @@ void systemInit(void){
                     // Sensor desconectado
                     if (sensor->adcStatus) {
                         if (sensor->taskHandle != NULL) {
+                            current_point[sensor->sensorNum-1] = 0;
                             vTaskDelete(sensor->taskHandle);
                             sensor->taskHandle = NULL;
                         }
