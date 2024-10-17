@@ -165,7 +165,7 @@ double euclidean_distance(Point a, float b[3]) {
                     else
                         vTaskResume(kNNHandle);
                 }
-            #if KMEANS
+            #elif KMEANS
                 if(kMeansHandle !=NULL){
                     if(!systemState)
                         vTaskSuspend(kMeansHandle);
