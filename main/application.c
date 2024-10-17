@@ -66,53 +66,55 @@ double euclidean_distance(Point a, float b[3]) {
                 pow(a.z - b[2], 2)*sensors[2]->adcStatus);
 }
 
-// Funcion para encontrar los K vecinos mas cercanos
-void find_k_nearest_neighbors(float test_point[3], int k, int neighbors[]) {
-    double* distances = malloc(NUM_POINTS * sizeof(double));
-    int i, j;
+#if !KMEANS
+    // Funcion para encontrar los K vecinos mas cercanos
+    void find_k_nearest_neighbors(float test_point[3], int k, int neighbors[]) {
+        double* distances = malloc(NUM_POINTS * sizeof(double));
+        int i, j;
 
-    // Calcular las distancias entre el punto de prueba y todos los puntos en el dataset
-    for (i = 0; i < NUM_POINTS; i++) {
-        distances[i] = euclidean_distance(dataset[i], test_point);
-    }
-
-    // Ordenar los puntos por distancia usando una seleccion simple de k vecinos
-    for (i = 0; i < k; i++) {
-        double min_distance = 1e9;
-        int min_index = -1;
-        for (j = 0; j < NUM_POINTS; j++) {
-            if (distances[j] < min_distance) {
-                min_distance = distances[j];
-                min_index = j;
-            }
+        // Calcular las distancias entre el punto de prueba y todos los puntos en el dataset
+        for (i = 0; i < NUM_POINTS; i++) {
+            distances[i] = euclidean_distance(dataset[i], test_point);
         }
-        neighbors[i] = dataset[min_index].label;  // Almacenar la etiqueta del vecino
-        distances[min_index] = 1e9;               // Excluir el punto ya seleccionado
+
+        // Ordenar los puntos por distancia usando una seleccion simple de k vecinos
+        for (i = 0; i < k; i++) {
+            double min_distance = 1e9;
+            int min_index = -1;
+            for (j = 0; j < NUM_POINTS; j++) {
+                if (distances[j] < min_distance) {
+                    min_distance = distances[j];
+                    min_index = j;
+                }
+            }
+            neighbors[i] = dataset[min_index].label;  // Almacenar la etiqueta del vecino
+            distances[min_index] = 1e9;               // Excluir el punto ya seleccionado
+        }
+
+        free(distances); // Liberar memoria
     }
 
-    free(distances); // Liberar memoria
-}
+    // Funcion para clasificar el punto de prueba basado en la mayoria de las etiquetas
+    int classify(float test_point[3], int k) {
+        int neighbors[K];
+        int i, label1 = 0, label2 = 0, label3 = 0;
 
-// Funcion para clasificar el punto de prueba basado en la mayoria de las etiquetas
-int classify(float test_point[3], int k) {
-    int neighbors[K];
-    int i, label1 = 0, label2 = 0, label3 = 0;
+        // Encontrar los k vecinos más cercanos
+        find_k_nearest_neighbors(test_point, k, neighbors);
 
-    // Encontrar los k vecinos más cercanos
-    find_k_nearest_neighbors(test_point, k, neighbors);
+        // Contar las etiquetas de los vecinos
+        for (i = 0; i < k; i++) {
+            if (neighbors[i] == 1) label1++;
+            else if (neighbors[i] == 2) label2++;
+            else if (neighbors[i] == 3) label3++;
+        }
 
-    // Contar las etiquetas de los vecinos
-    for (i = 0; i < k; i++) {
-        if (neighbors[i] == 1) label1++;
-        else if (neighbors[i] == 2) label2++;
-        else if (neighbors[i] == 3) label3++;
+        // Devolver la etiqueta mayoritaria
+        if (label1 > label2 && label1 > label3) return 1;
+        else if (label2 > label1 && label2 > label3) return 2;
+        else return 3;
     }
-
-    // Devolver la etiqueta mayoritaria
-    if (label1 > label2 && label1 > label3) return 1;
-    else if (label2 > label1 && label2 > label3) return 2;
-    else return 3;
-}
+#endif
 
 #if !RTOS
     void systemBehavior(void){
@@ -245,13 +247,44 @@ int classify(float test_point[3], int k) {
         }
     }
 
-    void vKNN(void *arg) {
-        while (1) {
-            int label = classify(current_point, K);
-            sprintf(message, "El punto (%.1f, %.1f, %.1f) pertenece a la clase: %d\n",
-                    current_point[0], current_point[1], current_point[2], label);
-            UART_Write(message);
-            vTaskDelay(750 / portTICK_PERIOD_MS);
+    #if !KMEANS
+        void vKNN(void *arg) {
+            while (1) {
+                int label = classify(current_point, K);
+                sprintf(message, "El punto (%.1f, %.1f, %.1f) pertenece a la clase: %d\n",
+                        current_point[0], current_point[1], current_point[2], label);
+                UART_Write(message);
+                vTaskDelay(750 / portTICK_PERIOD_MS);
+            }
         }
-    }
+    #elif KMEANS
+        void vKMeans(void *arg){
+            Point centroids[NUM_POINTS] = {
+                {21.96439839, 22.7299336, 21.92407344},
+                {28.06629513, 27.48887424, 27.42608114},
+                {30.99391202, 32.35545161, 32.95280938}
+            };
+            double distances[NUM_POINTS];
+            int i;
+
+            while(1){
+                int label = 0;
+                double min_distance = -1;
+                for (i = 0; i < NUM_POINTS; i++) {
+                    distances[i] = euclidean_distance(centroids[i], current_point);
+
+                    if (min_distance == -1 || distances[i] < min_distance) {
+                        min_distance = distances[i];
+                        label = i + 1;
+                    }
+                }
+
+                sprintf(message, "El punto (%.1f, %.1f, %.1f) pertenece a la clase: %d\n",
+                    current_point[0], current_point[1], current_point[2], label);
+                UART_Write(message);
+
+                vTaskDelay(750 / portTICK_PERIOD_MS);
+            }
+        }
+    #endif
 #endif

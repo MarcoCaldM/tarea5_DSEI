@@ -16,5 +16,6 @@ elseif(${IDF_TARGET} STREQUAL "esp32c3")
 endif()
 
 add_compile_definitions(RTOS=1)
+add_compile_definitions(KMEANS=0)
 
 project(DSE_Tarea5_Equipo1)

@@ -2,13 +2,28 @@
 #define APPLICATION_H
 
 #include "HAL.h"
-#include "dataset.h"
+
+#if !KMEANS
+    #include "dataset.h"
+    extern TaskHandle_t kNNHandle;
+    void vKNN(void *arg);
+#elif KMEANS
+    extern TaskHandle_t kMeansHandle;
+    void vKMeans(void *arg);
+
+    #define NUM_POINTS 3
+
+    typedef struct {
+        double x;
+        double y;
+        double z;
+    } Point;
+#endif
 
 #if RTOS
     extern TaskHandle_t adcHandle;
     extern TaskHandle_t systemHandle;
     extern TaskHandle_t buttonHandle;
-    extern TaskHandle_t kNNHandle;
 #endif
 
 typedef struct {
@@ -29,7 +44,6 @@ void periphInit(void);
     void vSystem(void *arg);
     void vSensorMonitor(void *arg);
     void vButton(void *arg);
-    void vKNN(void *arg);
 #endif
 
 #endif
