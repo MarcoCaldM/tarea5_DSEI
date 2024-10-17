@@ -158,12 +158,21 @@ double euclidean_distance(Point a, float b[3]) {
         while (1){
             GPIO_Write(LED_PIN, systemState);
             
-            if(kNNHandle !=NULL){
-                if(!systemState)
-                    vTaskSuspend(kNNHandle);
-                else
-                    vTaskResume(kNNHandle);
-            }
+            #if !KMEANS
+                if(kNNHandle !=NULL){
+                    if(!systemState)
+                        vTaskSuspend(kNNHandle);
+                    else
+                        vTaskResume(kNNHandle);
+                }
+            #if KMEANS
+                if(kMeansHandle !=NULL){
+                    if(!systemState)
+                        vTaskSuspend(kMeansHandle);
+                    else
+                        vTaskResume(kMeansHandle);
+                }
+            #endif
 
             // Verifica si no hay sensores conectados
             if (adcStatusAll == 0) {
